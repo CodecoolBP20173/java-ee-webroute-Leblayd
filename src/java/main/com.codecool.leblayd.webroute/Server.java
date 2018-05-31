@@ -4,8 +4,10 @@ import com.sun.net.httpserver.HttpServer;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,7 +28,7 @@ public class Server {
         for (Method method : Routes.class.getDeclaredMethods()) {
             if (method.isAnnotationPresent(WebRoute.class)) {
                 String path = method.getAnnotation(WebRoute.class).path();
-                Map<String, Object> params = paramsFromPath(path);
+                Map<Integer, Entry<String, Object>> params = paramsFromPath(path);
                 if (params.isEmpty()) {
                     Server.server.createContext(path, new Handler(method));
                 } else {
@@ -40,15 +42,15 @@ public class Server {
         System.out.println("Server routes successfully set up");
     }
 
-    private static Map<String, Object> paramsFromPath(String path) {
+    private static Map<Integer, Entry<String, Object>> paramsFromPath(String path) {
         Pattern p = Pattern.compile("<.*?>");
         Matcher m = p.matcher(path);
-        Map<String, Object> params = new HashMap<>();
+        Map<Integer, Entry<String, Object>> params = new HashMap<>();
 
         Integer i = 0;
         while (m.find()) {
             String param = m.group(0);
-            params.put((i++).toString(), param.substring(1, param.length() - 1));
+            params.put(i++, new SimpleEntry<>(param.substring(1, param.length() - 1), null));
         }
         return params;
     }

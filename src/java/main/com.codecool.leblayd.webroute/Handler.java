@@ -9,10 +9,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 class Handler implements HttpHandler {
     private Method method;
-    private Map<String, Object> params;
+    private Map<Integer, Entry<String, Object>> params;
+    private Map<String, Object> simpleParams;
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -29,8 +31,8 @@ class Handler implements HttpHandler {
             if (params == null) {
                 response = (String) method.invoke(null, exchange);
             } else {
-                getUrlParams(exchange);
-                response = (String) method.invoke(null, exchange, params);
+                getUrlParams(exchange.getRequestURI().getPath());
+                response = (String) method.invoke(null, exchange, simpleParams);
             }
             exchange.sendResponseHeaders(200, response.length());
         } catch (IllegalAccessException | InvocationTargetException | IllegalArgumentException e) {
@@ -40,20 +42,20 @@ class Handler implements HttpHandler {
         return response;
     }
 
-    private void getUrlParams(HttpExchange exchange) {
-        Map<String, Object> params = new HashMap<>();
-        for (int i = 0; i < this.params.entrySet().size(); i++) {
-            params.put((String) this.params.get(Integer.toString(i)),
-                    exchange.getRequestURI().getPath().split("/")[i + 2]);
+    private void getUrlParams(String path) {
+        simpleParams = new HashMap<>();
+        for (int i = 0; i < params.entrySet().size(); i++) {
+            Entry<String, Object> map = params.get(i);
+            map.setValue(path.split("/")[i + 2]);
+            simpleParams.put(map.getKey(), map.getValue());
         }
-        this.params = params;
     }
 
     Handler(Method method) {
         this.method = method;
     }
 
-    Handler(Method method, Map<String, Object> params) {
+    Handler(Method method, Map<Integer, Map.Entry<String, Object>> params) {
         this.method = method;
         this.params = params;
     }
