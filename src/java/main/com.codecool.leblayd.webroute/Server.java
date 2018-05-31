@@ -4,8 +4,8 @@ import com.sun.net.httpserver.HttpServer;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,9 +26,13 @@ public class Server {
         for (Method method : Routes.class.getDeclaredMethods()) {
             if (method.isAnnotationPresent(WebRoute.class)) {
                 String path = method.getAnnotation(WebRoute.class).path();
-                List<String> params = paramsFromPath(path); // TODO do stuff with the params
-                Server.server.createContext(path, new Handler(method));
-
+                Map<String, Object> params = paramsFromPath(path);
+                if (params.isEmpty()) {
+                    Server.server.createContext(path, new Handler(method));
+                } else {
+                    path = path.substring(0, path.substring(1).indexOf("/") + 1);
+                    Server.server.createContext(path, new Handler(method, params));
+                }
                 System.out.println("    route to path \"" + path + "\" set up");
             }
         }
@@ -36,14 +40,15 @@ public class Server {
         System.out.println("Server routes successfully set up");
     }
 
-    private static List<String> paramsFromPath(String path) {
+    private static Map<String, Object> paramsFromPath(String path) {
         Pattern p = Pattern.compile("<.*?>");
         Matcher m = p.matcher(path);
-        List<String> params = new ArrayList<>();
+        Map<String, Object> params = new HashMap<>();
 
+        Integer i = 0;
         while (m.find()) {
             String param = m.group(0);
-            params.add(param.substring(1, param.length() - 1));
+            params.put((i++).toString(), param.substring(1, param.length() - 1));
         }
         return params;
     }

@@ -2,6 +2,8 @@ package com.codecool.leblayd.webroute;
 
 import com.sun.net.httpserver.HttpExchange;
 
+import java.util.Map;
+
 class Routes {
     @WebRoute(path = "/index")
     public static String Index(HttpExchange exchange) {
@@ -19,8 +21,8 @@ class Routes {
         return "other route successful";
     }
 
-    @WebRoute(path = "/user/<username>")
-    public static String UserPage(HttpExchange exchange) {
-        return "user: " + "PLACEHOLDER" + "'s page";
+    @WebRoute(path = "/user/<username>/<subpage>")
+    public static String UserPage(HttpExchange exchange, Map<String, Object> params) {
+        return "user: " + params.get("username") + "'s " + params.get("subpage") + " page";
     }
 }
