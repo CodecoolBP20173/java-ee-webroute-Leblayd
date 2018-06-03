@@ -18,13 +18,17 @@ class Handler implements HttpHandler {
     private final Map<WebRoute.Method, Method> handlers = new HashMap<>();
     private Map<Integer, Entry<String, Object>> baseParameters;
 
-    Handler(WebRoute.Method method, Method handler) {
-        this.handlers.putIfAbsent(method, handler);
+    private Handler(WebRoute.Method method, Method handler) {
+        addHandler(method, handler);
     }
 
     Handler(WebRoute.Method method, Method handler, Map<Integer, Entry<String, Object>> baseParameters) {
         this(method, handler);
         this.baseParameters = baseParameters;
+    }
+
+    void addHandler(WebRoute.Method method, Method handler) {
+        this.handlers.putIfAbsent(method, handler);
     }
 
     @Override

@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Server {
+    private Map<String, Handler> routeHandlers = new HashMap<>();
     private HttpServer httpServer;
     private Class<?> routesClass;
     private int port;
@@ -33,35 +34,39 @@ public class Server {
             e.printStackTrace();
         }
         this.setUpRoutes();
-        this.httpServer.setExecutor(null); // creates a default executor
+        this.httpServer.setExecutor(null);
         this.httpServer.start();
         System.out.println("Server started");
     }
 
     private void setUpRoutes() {
         System.out.println("Creating all routes");
-
         for (Method handler : routesClass.getDeclaredMethods()) {
             if (handler.isAnnotationPresent(WebRoute.class)) {
-                createContext(handler);
+                setUpContext(handler);
             }
         }
         System.out.println("Server routes successfully set up");
     }
 
-    private void createContext(Method handler) {
+    private void setUpContext(Method handler) {
         WebRoute annotation = handler.getAnnotation(WebRoute.class);
         String path = annotation.path();
         WebRoute.Method method = annotation.request();
-        Map<Integer, Entry<String, Object>> params = paramsFromPath(path);
+        Map<Integer, Entry<String, Object>> baseParams = paramsFromPath(path);
 
-        if (params.isEmpty()) {
-            this.httpServer.createContext(path, new Handler(method, handler));
+        path = baseParams.isEmpty() ? path : path.substring(0, path.indexOf("<"));
+        Handler routeHandler = new Handler(method, handler, baseParams);
+
+        System.out.print("    route to path \"" + path + "\" ");
+        Handler existingHandler;
+        if ((existingHandler = this.routeHandlers.putIfAbsent(path, routeHandler)) == null) {
+            this.httpServer.createContext(path, routeHandler);
+            System.out.println("set up, handling " + method + " requests only");
         } else {
-            path = path.substring(0, path.substring(1).indexOf("<"));
-            this.httpServer.createContext(path, new Handler(method, handler, params));
+            existingHandler.addHandler(method, handler);
+            System.out.println("modified, now handling " + method + " requests, too");
         }
-        System.out.println("    route to path \"" + path + "\" set up, handling " + method + " requests");
     }
 
     private static Map<Integer, Entry<String, Object>> paramsFromPath(String path) {
