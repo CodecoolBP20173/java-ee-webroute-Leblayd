@@ -2,6 +2,7 @@ package com.codecool.leblayd.webroute;
 
 import com.sun.net.httpserver.HttpServer;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
@@ -12,10 +13,19 @@ import java.util.regex.Pattern;
 
 public class Server {
     private HttpServer httpServer;
+    private Class<?> routesClass;
 
-    public static void main(String[] args) throws Exception {
-        Server server = new Server();
-        server.httpServer = HttpServer.create(new InetSocketAddress(8000), 0);
+    private Server(Class<?> routesClass) {
+        this.routesClass = routesClass;
+    }
+
+    public static void simpleStart(Class<?> routesClass) {
+        Server server = new Server(routesClass);
+        try {
+            server.httpServer = HttpServer.create(new InetSocketAddress(8000), 0);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         server.createRoutes();
         server.httpServer.setExecutor(null); // creates a default executor
         server.httpServer.start();
@@ -25,7 +35,7 @@ public class Server {
     private void createRoutes() {
         System.out.println("Creating all routes");
 
-        for (java.lang.reflect.Method handler : Routes.class.getDeclaredMethods()) {
+        for (java.lang.reflect.Method handler : routesClass.getDeclaredMethods()) {
             if (handler.isAnnotationPresent(WebRoute.class)) {
                 WebRoute annotation = handler.getAnnotation(WebRoute.class);
                 String path = annotation.path();

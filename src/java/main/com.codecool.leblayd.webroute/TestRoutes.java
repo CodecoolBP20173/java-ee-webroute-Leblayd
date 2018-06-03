@@ -6,7 +6,7 @@ import java.util.Map;
 
 import static com.codecool.leblayd.webroute.WebRoute.Method.POST;
 
-class Routes {
+class TestRoutes {
     @WebRoute(path = "/index")
     public static String Index(HttpExchange exchange) {
 
