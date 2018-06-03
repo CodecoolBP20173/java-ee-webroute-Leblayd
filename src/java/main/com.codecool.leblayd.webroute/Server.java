@@ -25,20 +25,20 @@ public class Server {
     private void createRoutes() {
         System.out.println("Creating all routes");
 
-        for (java.lang.reflect.Method method : Routes.class.getDeclaredMethods()) {
-            if (method.isAnnotationPresent(WebRoute.class)) {
-                WebRoute annotation = method.getAnnotation(WebRoute.class);
+        for (java.lang.reflect.Method handler : Routes.class.getDeclaredMethods()) {
+            if (handler.isAnnotationPresent(WebRoute.class)) {
+                WebRoute annotation = handler.getAnnotation(WebRoute.class);
                 String path = annotation.path();
-                WebRoute.Method request = annotation.request();
+                WebRoute.Method method = annotation.request();
                 Map<Integer, Entry<String, Object>> params = paramsFromPath(path);
 
                 if (params.isEmpty()) {
-                    this.httpServer.createContext(path, new Handler(method, request));
+                    this.httpServer.createContext(path, new Handler(method, handler));
                 } else {
                     path = path.substring(0, path.substring(1).indexOf("<"));
-                    this.httpServer.createContext(path, new Handler(method, request, params));
+                    this.httpServer.createContext(path, new Handler(method, handler, params));
                 }
-                System.out.println("    route to path \"" + path + "\" set up");
+                System.out.println("    route to path \"" + path + "\" set up, handling " + method + " requests");
             }
         }
 

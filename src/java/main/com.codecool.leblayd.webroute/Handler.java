@@ -12,17 +12,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 class Handler implements HttpHandler {
-    private final WebRoute.Method method;
-    private final Method handler;
+    private final Map<WebRoute.Method, Method> handlers = new HashMap<WebRoute.Method, Method>();;
     private Map<Integer, Entry<String, Object>> baseParameters;
 
-    Handler(Method handler, WebRoute.Method method) {
-        this.handler = handler;
-        this.method = method;
+    Handler(WebRoute.Method method, Method handler) {
+        this.handlers.put(method, handler);
     }
 
-    Handler(Method handler, WebRoute.Method method, Map<Integer, Entry<String, Object>> baseParameters) {
-        this(handler, method);
+    Handler(WebRoute.Method method, Method handler, Map<Integer, Entry<String, Object>> baseParameters) {
+        this(method, handler);
         this.baseParameters = baseParameters;
     }
 
@@ -49,12 +47,13 @@ class Handler implements HttpHandler {
         return response;
     }
 
-    private String call(HttpExchange exchange, Map<String, Object> parameters)
+    private String call(HttpExchange exchange, Map<?, ?> parameters)
             throws InvocationTargetException, IllegalAccessException, IllegalArgumentException {
+        WebRoute.Method method = WebRoute.Method.getFromString(exchange.getRequestMethod());
         if (parameters == null || parameters.isEmpty()) {
-            return (String) handler.invoke(null, exchange);
+            return (String) handlers.get(method).invoke(null, exchange);
         } else {
-            return (String) handler.invoke(null, exchange, parameters);
+            return (String) handlers.get(method).invoke(null, exchange, parameters);
         }
     }
 
