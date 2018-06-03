@@ -11,17 +11,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Server {
-    private static HttpServer server;
+    private HttpServer httpServer;
 
     public static void main(String[] args) throws Exception {
-        server = HttpServer.create(new InetSocketAddress(8000), 0);
-        createRoutes();
-        server.setExecutor(null); // creates a default executor
-        server.start();
+        Server server = new Server();
+        server.httpServer = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createRoutes();
+        server.httpServer.setExecutor(null); // creates a default executor
+        server.httpServer.start();
         System.out.println("Server started");
     }
 
-    private static void createRoutes() {
+    private void createRoutes() {
         System.out.println("Creating all routes");
 
         for (java.lang.reflect.Method method : Routes.class.getDeclaredMethods()) {
@@ -32,10 +33,10 @@ public class Server {
                 Map<Integer, Entry<String, Object>> params = paramsFromPath(path);
 
                 if (params.isEmpty()) {
-                    Server.server.createContext(path, new Handler(method, request));
+                    this.httpServer.createContext(path, new Handler(method, request));
                 } else {
                     path = path.substring(0, path.substring(1).indexOf("<"));
-                    Server.server.createContext(path, new Handler(method, request, params));
+                    this.httpServer.createContext(path, new Handler(method, request, params));
                 }
                 System.out.println("    route to path \"" + path + "\" set up");
             }

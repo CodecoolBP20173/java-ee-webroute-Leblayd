@@ -51,10 +51,10 @@ class Handler implements HttpHandler {
 
     private String call(HttpExchange exchange, Map<String, Object> parameters)
             throws InvocationTargetException, IllegalAccessException, IllegalArgumentException {
-        if (parameters == null) {
-            return (String) handler.invoke(null, exchange, parameters);
-        } else {
+        if (parameters == null || parameters.isEmpty()) {
             return (String) handler.invoke(null, exchange);
+        } else {
+            return (String) handler.invoke(null, exchange, parameters);
         }
     }
 
