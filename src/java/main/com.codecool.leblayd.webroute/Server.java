@@ -3,6 +3,7 @@ package com.codecool.leblayd.webroute;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
@@ -14,45 +15,53 @@ import java.util.regex.Pattern;
 public class Server {
     private HttpServer httpServer;
     private Class<?> routesClass;
+    private int port;
 
-    private Server(Class<?> routesClass) {
+    public Server(Class<?> routesClass, int port) {
         this.routesClass = routesClass;
+        this.port = port;
     }
 
-    public static void simpleStart(Class<?> routesClass) {
-        Server server = new Server(routesClass);
+    public Server(Class<?> routesClass) {
+        this(routesClass, 8000);
+    }
+
+    public void start() {
         try {
-            server.httpServer = HttpServer.create(new InetSocketAddress(8000), 0);
+            this.httpServer = HttpServer.create(new InetSocketAddress(this.port), 0);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        server.createRoutes();
-        server.httpServer.setExecutor(null); // creates a default executor
-        server.httpServer.start();
+        this.setUpRoutes();
+        this.httpServer.setExecutor(null); // creates a default executor
+        this.httpServer.start();
         System.out.println("Server started");
     }
 
-    private void createRoutes() {
+    private void setUpRoutes() {
         System.out.println("Creating all routes");
 
-        for (java.lang.reflect.Method handler : routesClass.getDeclaredMethods()) {
+        for (Method handler : routesClass.getDeclaredMethods()) {
             if (handler.isAnnotationPresent(WebRoute.class)) {
-                WebRoute annotation = handler.getAnnotation(WebRoute.class);
-                String path = annotation.path();
-                WebRoute.Method method = annotation.request();
-                Map<Integer, Entry<String, Object>> params = paramsFromPath(path);
-
-                if (params.isEmpty()) {
-                    this.httpServer.createContext(path, new Handler(method, handler));
-                } else {
-                    path = path.substring(0, path.substring(1).indexOf("<"));
-                    this.httpServer.createContext(path, new Handler(method, handler, params));
-                }
-                System.out.println("    route to path \"" + path + "\" set up, handling " + method + " requests");
+                createContext(handler);
             }
         }
-
         System.out.println("Server routes successfully set up");
+    }
+
+    private void createContext(Method handler) {
+        WebRoute annotation = handler.getAnnotation(WebRoute.class);
+        String path = annotation.path();
+        WebRoute.Method method = annotation.request();
+        Map<Integer, Entry<String, Object>> params = paramsFromPath(path);
+
+        if (params.isEmpty()) {
+            this.httpServer.createContext(path, new Handler(method, handler));
+        } else {
+            path = path.substring(0, path.substring(1).indexOf("<"));
+            this.httpServer.createContext(path, new Handler(method, handler, params));
+        }
+        System.out.println("    route to path \"" + path + "\" set up, handling " + method + " requests");
     }
 
     private static Map<Integer, Entry<String, Object>> paramsFromPath(String path) {
