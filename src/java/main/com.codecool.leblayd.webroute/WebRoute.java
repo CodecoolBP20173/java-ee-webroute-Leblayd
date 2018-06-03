@@ -9,6 +9,18 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface WebRoute {
     String path() default "/";
-    String method() default "GET";
-}
+    Method request() default Method.GET;
 
+    enum Method {
+        GET, POST, PUT, DELETE;
+
+        static Method getFromString(String string) {
+            for (Method method : Method.values()) {
+                if (method.toString().equals(string)) {
+                    return method;
+                }
+            }
+            return null;
+        }
+    }
+}

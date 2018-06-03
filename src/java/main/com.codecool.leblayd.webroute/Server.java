@@ -2,7 +2,6 @@ package com.codecool.leblayd.webroute;
 
 import com.sun.net.httpserver.HttpServer;
 
-import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
@@ -25,15 +24,18 @@ public class Server {
     private static void createRoutes() {
         System.out.println("Creating all routes");
 
-        for (Method method : Routes.class.getDeclaredMethods()) {
+        for (java.lang.reflect.Method method : Routes.class.getDeclaredMethods()) {
             if (method.isAnnotationPresent(WebRoute.class)) {
-                String path = method.getAnnotation(WebRoute.class).path();
+                WebRoute annotation = method.getAnnotation(WebRoute.class);
+                String path = annotation.path();
+                WebRoute.Method request = annotation.request();
                 Map<Integer, Entry<String, Object>> params = paramsFromPath(path);
+
                 if (params.isEmpty()) {
-                    Server.server.createContext(path, new Handler(method));
+                    Server.server.createContext(path, new Handler(method, request));
                 } else {
-                    path = path.substring(0, path.substring(1).indexOf("/") + 1);
-                    Server.server.createContext(path, new Handler(method, params));
+                    path = path.substring(0, path.substring(1).indexOf("<"));
+                    Server.server.createContext(path, new Handler(method, request, params));
                 }
                 System.out.println("    route to path \"" + path + "\" set up");
             }
